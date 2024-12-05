@@ -15,9 +15,20 @@ enum class Difficulty { EASY, MEDIUM, HARD };
 
 int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Improved Maze Game");
+    InitAudioDevice();
     SetTargetFPS(60);
 
+    // Load sounds
+    Sound menuMusic = LoadSound("resources/menu_music.wav");
+    Sound stepSound = LoadSound("resources/step.wav");
+    Sound victorySound = LoadSound("resources/victory.wav");
+    
+    SetSoundVolume(menuMusic, 0.5f);
+    SetSoundVolume(stepSound, 0.7f);
+    SetSoundVolume(victorySound, 1.0f);
+
     GameState gameState = GameState::MENU;
+    GameState previousState = GameState::MENU;
     Difficulty selectedDifficulty = Difficulty::EASY;
     float gameStartTime = 0;
     float gameEndTime = 0;
@@ -25,9 +36,22 @@ int main() {
     std::unique_ptr<Maze> maze;
     std::unique_ptr<Player> player;
 
+    // Start playing menu music
+    PlaySound(menuMusic);
+
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
+
+        // Handle music looping for menu
+        if (gameState == GameState::MENU && !IsSoundPlaying(menuMusic)) {
+            PlaySound(menuMusic);
+        }
+
+        // Stop menu music when leaving menu
+        if (previousState == GameState::MENU && gameState != GameState::MENU) {
+            StopSound(menuMusic);
+        }
 
         switch(gameState) {
             case GameState::MENU: {
@@ -51,6 +75,7 @@ int main() {
                 DrawText("Press 3: Hard Level - Ultimate maze challenge", SCREEN_WIDTH/2 - 250, 500, 25, MENU_TEXT_COLOR);
 
                 if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_THREE)) {
+                    StopSound(menuMusic);
                     selectedDifficulty = IsKeyPressed(KEY_ONE) ? Difficulty::EASY : 
                                          IsKeyPressed(KEY_TWO) ? Difficulty::MEDIUM : Difficulty::HARD;
                     int mazeSize = (selectedDifficulty == Difficulty::EASY) ? 10 : 
@@ -65,7 +90,10 @@ int main() {
             }
             
             case GameState::PLAYING: {
-                player->Update(*maze);
+                bool moved = player->Update(*maze);
+                if (moved) {
+                    PlaySound(stepSound);
+                }
                 
                 int mazeSize = maze->GetSize();
                 int mazePixelSize = mazeSize * CELL_SIZE;
@@ -108,6 +136,7 @@ int main() {
                 if (pos.x > (mazeSize-2) * CELL_SIZE && pos.y > (mazeSize-2) * CELL_SIZE) {
                     gameState = GameState::FINISHED;
                     gameEndTime = currentTime;
+                    PlaySound(victorySound);
                 }
                 break;
             }
@@ -127,9 +156,16 @@ int main() {
             }
         }
 
+        previousState = gameState;
         EndDrawing();
     }
 
+    // Unload sounds
+    UnloadSound(menuMusic);
+    UnloadSound(stepSound);
+    UnloadSound(victorySound);
+    
+    CloseAudioDevice();
     CloseWindow();
     return 0;
 }
