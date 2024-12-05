@@ -6,7 +6,9 @@ Player::Player(float x, float y)
     : position{x, y}, velocity{0, 0}, radius{CELL_SIZE * 0.4f}, 
       speed{CELL_SIZE}, friction{0.9f}, isMoving{false} {}
 
-void Player::Update(const Maze& maze) {
+bool Player::Update(const Maze& maze) {
+    bool moved = false;
+    
     // Only accept new movement input if the player is not currently moving
     if (!isMoving) {
         Vector2 newPosition = position;
@@ -37,9 +39,12 @@ void Player::Update(const Maze& maze) {
             if (!maze.isWall(newCellX, newCellY)) {
                 // Instantly move to the new position
                 position = newPosition;
+                moved = true;
             }
         }
     }
+    
+    return moved;
 }
 
 void Player::Draw() const {
