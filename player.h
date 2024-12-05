@@ -18,7 +18,7 @@ private:
 
 public:
     Player(float x, float y);
-    void Update(const Maze& maze);
+    bool Update(const Maze& maze);
     void Draw() const;
     Vector2 GetPosition() const;
 };
